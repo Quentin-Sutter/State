@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f957f639cc9ab7a4994337249f22b259, type: 3}
+  m_Name: Sword
+  m_EditorClassIdentifier: 
+  weaponName: Sword
+  shape: {fileID: 8901297520940540012, guid: 691ce3c7b5f6c9a419cc4346bfa3f38b, type: 3}
+  damage: 10
+  comboStrikes:
+  - {fileID: 11400000, guid: 17c99bfdbc8705a44b8859f69ff3a300, type: 2}
+  - {fileID: 11400000, guid: bf36423e4a87e264c8dbcda692de6d83, type: 2}
+  - {fileID: 11400000, guid: 36159db62fbf7a148888cb61a68aa084, type: 2}
+  pushPower: 10
+  pushDuration: 0.5
+  upgradesOnStart:
+  - {fileID: 11400000, guid: debb11405975a024aa514c1ee7001204, type: 2}
+  - {fileID: 11400000, guid: 825ed8b75f58ff34a8024fd6b84214ae, type: 2}

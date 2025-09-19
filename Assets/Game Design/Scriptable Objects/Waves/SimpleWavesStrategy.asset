@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9c71b433dc8d124a8507a29e4b4c882, type: 3}
+  m_Name: SimpleWavesStrategy
+  m_EditorClassIdentifier: 
+  possibleEnemies:
+  - {fileID: 11400000, guid: 7142d3581db1f3749a6d3098addb5690, type: 2}
+  - {fileID: 11400000, guid: 981af572fcd443f4ebc3e9a191a2c7a7, type: 2}
+  - {fileID: 11400000, guid: 81ff588e9b2f8574796a4393f758adce, type: 2}
+  Boss: {fileID: 11400000, guid: a984cbd39aba3284297018e7e6bcf21a, type: 2}

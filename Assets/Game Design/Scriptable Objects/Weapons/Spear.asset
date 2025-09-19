@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f957f639cc9ab7a4994337249f22b259, type: 3}
+  m_Name: Spear
+  m_EditorClassIdentifier: 
+  weaponName: Spear
+  shape: {fileID: 8901297520940540012, guid: d60f3ed8611fdf4488f98c515f98a845, type: 3}
+  damage: 5
+  comboStrikes:
+  - {fileID: 11400000, guid: c1ed5e6c0554420449cabf911f0313da, type: 2}
+  - {fileID: 11400000, guid: 7ecf4a85f870bdd44ba228c8539f7be8, type: 2}
+  - {fileID: 11400000, guid: 7ecf4a85f870bdd44ba228c8539f7be8, type: 2}
+  pushPower: 20
+  pushDuration: 0.5
+  upgradesOnStart:
+  - {fileID: 11400000, guid: 5805fa0eb7005f3409ee834ca7f173ad, type: 2}

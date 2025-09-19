@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87fefbea4331b87438f2682001ce7cab, type: 3}
+  m_Name: EnemyBoss
+  m_EditorClassIdentifier: 
+  enemyName: Boss
+  prefab: {fileID: 3007938458587767537, guid: 13f4b56e532c86d45bd4bbff1c441626, type: 3}
+  baseHealth: 100
+  moveSpeed: 3
+  chaseRange: 100
+  attackRange: 3
+  weapon: {fileID: 11400000, guid: 40b0674febd2d5f4ca1fab209af72e67, type: 2}
+  upgrades:
+  - {fileID: 11400000, guid: debb11405975a024aa514c1ee7001204, type: 2}
+  - {fileID: 11400000, guid: 24f142c6d87b4d347a88875c922466b4, type: 2}
+  - {fileID: 11400000, guid: 24f142c6d87b4d347a88875c922466b4, type: 2}
+  - {fileID: 11400000, guid: 24f142c6d87b4d347a88875c922466b4, type: 2}
+  - {fileID: 11400000, guid: 24f142c6d87b4d347a88875c922466b4, type: 2}
+  - {fileID: 11400000, guid: 24f142c6d87b4d347a88875c922466b4, type: 2}
