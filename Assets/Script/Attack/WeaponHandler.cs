@@ -1,173 +1,228 @@
-﻿using DG.Tweening;
 using System;
 using System.Collections;
-using System.Linq;
+using DG.Tweening;
 using UnityEngine;
-using UnityEngine.InputSystem.XR;
 
 public class WeaponHandler : MonoBehaviour
 {
-    public SO_Weapon currentWeapon;
+    private const string RotationTweenIdPrefix = "WeaponRotation";
+    private const string MovementTweenIdPrefix = "WeaponMovement";
 
-    Weapon instanciedWeapon;
+    [SerializeField] private SO_Weapon currentWeapon;
+    [SerializeField] private float minComboInputDelay = 0.5f;
 
-    Coroutine _strikeRoutine;
-
-    private int currentStrikeIndex = 0;
-
-    public float timeMinForCombo = 0.5f;
-    float comboTimer;
+    private Weapon spawnedWeapon;
+    private Coroutine strikeRoutine;
+    private int currentStrikeIndex;
+    private float comboTimer;
 
     public event Action OnStrikeFinished;
-    public event Action OnStrikeCanceled; 
+    public event Action OnStrikeCanceled;
 
-    public void Initialize ()
+    public SO_Weapon CurrentWeapon
     {
-        GenerateWeapon();
-        StoreWeapon(); 
+        get => currentWeapon;
+        set => currentWeapon = value;
     }
 
-    void Update()
+    public void Initialize()
     {
-        if (comboTimer > 0f)
+        if (currentWeapon == null)
         {
-            comboTimer -= Time.deltaTime;
-            if (comboTimer <= 0f) currentStrikeIndex = 0;
+            Debug.LogError($"{name} has no weapon assigned.");
+            return;
+        }
+
+        GenerateWeapon();
+        StoreWeapon();
+    }
+
+    private void Update()
+    {
+        if (comboTimer <= 0f)
+        {
+            return;
+        }
+
+        comboTimer -= Time.deltaTime;
+        if (comboTimer <= 0f)
+        {
+            currentStrikeIndex = 0;
         }
     }
 
     public void Attack(Character controller, Vector3 targetPoint)
-    { 
-        if (_strikeRoutine != null) return;
+    {
+        if (strikeRoutine != null || spawnedWeapon == null)
+        {
+            return;
+        }
 
-        _strikeRoutine = StartCoroutine(DoStrike(controller, targetPoint));
+        if (currentWeapon == null || currentWeapon.comboStrikes == null || currentWeapon.comboStrikes.Length == 0)
+        {
+            Debug.LogWarning($"{name} has no strikes configured.");
+            return;
+        }
+
+        strikeRoutine = StartCoroutine(PerformStrike(controller, targetPoint));
     }
 
-     
-    IEnumerator DoStrike(Character controller, Vector3 targetPoint)
+    public void InterruptCurrentAttack(bool notifyCanceled = true)
+    {
+        if (strikeRoutine != null)
+        {
+            StopCoroutine(strikeRoutine);
+            strikeRoutine = null;
+        }
+
+        DOTween.Kill(RotationTweenIdPrefix + GetInstanceID());
+        DOTween.Kill(MovementTweenIdPrefix + GetInstanceID());
+
+        StoreWeapon();
+
+        currentStrikeIndex = 0;
+        comboTimer = 0f;
+
+        if (notifyCanceled)
+        {
+            OnStrikeCanceled?.Invoke();
+        }
+    }
+
+    public void GenerateWeapon()
+    {
+        if (spawnedWeapon != null)
+        {
+            Destroy(spawnedWeapon.gameObject);
+        }
+
+        if (currentWeapon.shape == null)
+        {
+            Debug.LogError($"Weapon {currentWeapon.name} is missing a shape prefab.");
+            return;
+        }
+
+        spawnedWeapon = Instantiate(currentWeapon.shape, transform);
+    }
+
+    public void SetWeaponSize(Character controller)
+    {
+        if (spawnedWeapon == null)
+        {
+            return;
+        }
+
+        var scaleMultiplier = 1f.ApplyPercentChange(controller.FullUpgrade.weaponSizePercent);
+        spawnedWeapon.transform.localScale = Vector3.one * scaleMultiplier;
+    }
+
+    public void StoreWeapon()
+    {
+        if (spawnedWeapon == null)
+        {
+            return;
+        }
+
+        spawnedWeapon.DisableCollider();
+        spawnedWeapon.transform.localPosition = Vector3.left * 0.5f;
+        spawnedWeapon.transform.localRotation = Quaternion.identity;
+    }
+
+    private IEnumerator PerformStrike(Character controller, Vector3 targetPoint)
     {
         comboTimer = 0f;
-        SO_Strike strike = Instantiate(currentWeapon.comboStrikes[currentStrikeIndex]);
-        instanciedWeapon.EnableCollider();
 
+        var strike = Instantiate(currentWeapon.comboStrikes[currentStrikeIndex]);
+        spawnedWeapon.EnableCollider();
 
-        yield return PerformHit(controller, strike, instanciedWeapon, targetPoint);
- 
-        yield return new WaitForSeconds(ApplyWeaponSpeed(strike.delayEnd, controller)); 
+        yield return ExecuteStrike(controller, strike, targetPoint);
+
+        yield return new WaitForSeconds(ApplyWeaponSpeed(strike.delayEnd, controller));
 
         currentStrikeIndex++;
-        if (currentStrikeIndex > currentWeapon.comboStrikes.Count() - 1)
+        if (currentStrikeIndex >= currentWeapon.comboStrikes.Length)
         {
             currentStrikeIndex = 0;
             controller.ComboFinished();
         }
-        else comboTimer = timeMinForCombo;
+        else
+        {
+            comboTimer = minComboInputDelay;
+        }
 
-        _strikeRoutine = null;
+        strikeRoutine = null;
         OnStrikeFinished?.Invoke();
     }
 
-    IEnumerator PerformHit(Character controller, SO_Strike strike, Weapon weapon, Vector3 targetPoint)
+    private IEnumerator ExecuteStrike(Character controller, SO_Strike strike, Vector3 targetPoint)
     {
-        Vector2 dir = (Vector2)(targetPoint - transform.position).normalized;
+        var direction = (targetPoint - transform.position).normalized;
+        var strikeDuration = ApplyWeaponSpeed(strike.duration, controller);
 
-        float weaponSpeedSeconds = ApplyWeaponSpeed(strike.duration, controller);
+        var rotationTweenId = RotationTweenIdPrefix + GetInstanceID();
+        var movementTweenId = MovementTweenIdPrefix + GetInstanceID();
 
-        // IDs par instance pour kill ciblé
-        string rotId = "WeaponRotation" + gameObject.GetInstanceID();
-        string movId = "WeaponMovement" + gameObject.GetInstanceID();
+        var left = -Vector2.Perpendicular(direction);
+        var right = Vector2.Perpendicular(direction);
 
-        // Orientation
-        Vector2 left = -Vector2.Perpendicular(dir);
-        Vector2 right = Vector2.Perpendicular(dir);
         float angle = 0f;
-
         switch (strike.type)
         {
-            case StrikeMovementType.Thrust: angle = dir.SignedAngleZ(); break;
-            case StrikeMovementType.Swing: angle = left.SignedAngleZ(); break;
-            case StrikeMovementType.Spin: angle = left.SignedAngleZ(); break;
-            case StrikeMovementType.BackSwing: angle = right.SignedAngleZ(); break;
+            case StrikeMovementType.Thrust:
+                angle = direction.SignedAngleZ();
+                break;
+            case StrikeMovementType.Swing:
+            case StrikeMovementType.Spin:
+                angle = left.SignedAngleZ();
+                break;
+            case StrikeMovementType.BackSwing:
+                angle = right.SignedAngleZ();
+                break;
         }
-        
-        float delayStart = ApplyWeaponSpeed(strike.delayStart, controller);
-        weapon.transform.rotation = Quaternion.Euler(Vector3.forward * angle); 
-        weapon.transform.localPosition = Vector3.zero;
 
-        yield return new WaitForSeconds(delayStart);
+        var startupDelay = ApplyWeaponSpeed(strike.delayStart, controller);
+        spawnedWeapon.transform.rotation = Quaternion.Euler(Vector3.forward * angle);
+        spawnedWeapon.transform.localPosition = Vector3.zero;
 
+        yield return new WaitForSeconds(startupDelay);
 
-        // Mouvement
         float rotationAmount = 0f;
-        Vector2 moveAmount = Vector2.zero;
+        Vector2 movementAmount = Vector2.zero;
+
         switch (strike.type)
         {
-            case StrikeMovementType.Thrust: moveAmount = dir * strike.moveAmount; break;
-            case StrikeMovementType.Swing: rotationAmount = 180f; break;
-            case StrikeMovementType.Spin: rotationAmount = 360f; break;
-            case StrikeMovementType.BackSwing: rotationAmount = -180f; break;
+            case StrikeMovementType.Thrust:
+                movementAmount = direction * strike.moveAmount;
+                break;
+            case StrikeMovementType.Swing:
+                rotationAmount = 180f;
+                break;
+            case StrikeMovementType.Spin:
+                rotationAmount = 360f;
+                break;
+            case StrikeMovementType.BackSwing:
+                rotationAmount = -180f;
+                break;
         }
 
-   
+        spawnedWeapon.transform
+            .DOLocalRotate(Vector3.forward * rotationAmount, strikeDuration, RotateMode.LocalAxisAdd)
+            .SetId(rotationTweenId);
 
-        weapon.transform
-              .DOLocalRotate(Vector3.forward * rotationAmount, weaponSpeedSeconds, RotateMode.LocalAxisAdd) 
-              .SetId(rotId);
+        spawnedWeapon.transform
+            .DOLocalMove(movementAmount, strikeDuration)
+            .SetId(movementTweenId);
 
-        weapon.transform
-              .DOLocalMove(moveAmount, weaponSpeedSeconds) 
-              .SetId(movId);
-
-        // Attente = durée déclarée du strike (pas forcément égale aux durées DOTween si tu varies)
         yield return new WaitForSeconds(strike.duration);
     }
 
-    // À appeler quand le perso prend un coup
-    public void InterruptCurrentAttack(bool notifyCanceled = true)
+    private float ApplyWeaponSpeed(float value, Character controller)
     {
-        // Stop la coroutine principale d’attaque
-        if (_strikeRoutine != null)
-        {
-            StopCoroutine(_strikeRoutine);
-            _strikeRoutine = null;
-        }
+        var finalValue = value.ApplyPercentChange(controller.FullUpgrade.weaponSpeedPercent);
 
-        // Tuer tweens en cours (IDs uniques)
-        DOTween.Kill("WeaponRotation" + gameObject.GetInstanceID());
-        DOTween.Kill("WeaponMovement" + gameObject.GetInstanceID());
-
-        StoreWeapon();
-
-        // Reset combo/timers 
-        currentStrikeIndex = 0;
-        comboTimer = 0f;
-
-        if (notifyCanceled) OnStrikeCanceled?.Invoke();
-    } 
-
-    public void GenerateWeapon ()
-    {
-        instanciedWeapon = Instantiate(currentWeapon.shape, transform);
-    }
-
-    public void SetWeaponSize (Character controller)
-    {
-        instanciedWeapon.transform.localScale = Vector3.one * 1.0f.ApplyPercentChange(controller.fullUpgrade.weaponSizePercent);
-    }
-
-    public void StoreWeapon()
-    { 
-        instanciedWeapon.DisableCollider();
-        instanciedWeapon.transform.localPosition = Vector3.left * 0.5f;
-        instanciedWeapon.transform.localRotation = Quaternion.identity;
-    }
-
-    float ApplyWeaponSpeed (float value, Character controller)
-    {
-        float finalValue = value.ApplyPercentChange(controller.fullUpgrade.weaponSpeedPercent);
         if (controller is Player player && player.StateMachine.CurrentState.IsCountering())
         {
-            finalValue = finalValue.ApplyPercentChange(player.fullUpgrade.parryRetaliationSpeed);
+            finalValue = finalValue.ApplyPercentChange(player.FullUpgrade.parryRetaliationSpeed);
         }
 
         return finalValue;

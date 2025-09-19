@@ -19,8 +19,8 @@ public class PlayerDamageState : PlayerState
         power = pushValues.power;
         DOTween.To(() => power, x => power = x, 0.0f, pushValues.duration).SetEase(Ease.OutCubic).SetId("Damage" + player.GetInstanceID());
         FxManager.Instance.PlayVFX("Hit", player.transform.position);
-        player.expressions.SetExpression(CharacterExpression.Expression.Hurt);
-        player.weaponHandler.InterruptCurrentAttack();
+        player.Expressions.SetExpression(CharacterExpression.Expression.Hurt);
+        player.WeaponHandler.InterruptCurrentAttack();
     }
 
     public override void Exit()

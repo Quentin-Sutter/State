@@ -11,7 +11,7 @@ public class PlayerMovementState : PlayerState
 
     public override void Enter()
     {
-        player.expressions.SetExpression(CharacterExpression.Expression.Happy); 
+        player.Expressions.SetExpression(CharacterExpression.Expression.Happy);
     }
 
     public override void Update()

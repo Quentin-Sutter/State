@@ -15,7 +15,8 @@ public class PlayerParryState : PlayerState
     public override void Enter()
     {
         player.StopMovement();
-        parryTime = GameBalance.Config.parryWindow.ApplyPercentChange(player.fullUpgrade.parryDuration);
+        timer = 0f;
+        parryTime = GameBalance.Config.parryWindow.ApplyPercentChange(player.FullUpgrade.parryDuration);
         vulnerableTime = GameBalance.Config.parryVulnerableTime;
     }
 
@@ -24,8 +25,8 @@ public class PlayerParryState : PlayerState
         if (timer < parryTime)
         {
             timer += Time.deltaTime;
-            if (IsInvulnerable()) player.expressions.SetExpression(CharacterExpression.Expression.Sunglass);
-            else player.expressions.SetExpression(CharacterExpression.Expression.Surprised);
+            if (IsInvulnerable()) player.Expressions.SetExpression(CharacterExpression.Expression.Sunglass);
+            else player.Expressions.SetExpression(CharacterExpression.Expression.Surprised);
 
             if (timer >= parryTime)
             {

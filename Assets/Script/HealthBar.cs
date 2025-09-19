@@ -1,23 +1,46 @@
-using UnityEngine;
-using UnityEngine.UI;
 using DG.Tweening;
 using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
 
 public class HealthBar : MonoBehaviour
 {
-    public Image healthFill; // Drag & drop ton Image de barre de vie 
-    public TextMeshProUGUI number;
+    [SerializeField] private Image healthFill;
+    [SerializeField] private TextMeshProUGUI healthText;
+    [SerializeField] private float fillAnimationDuration = 0.5f;
 
-    private void Update()
+    private string tweenId;
+
+    private void Awake()
+    {
+        tweenId = "HealthBar" + GetInstanceID();
+    }
+
+    private void OnDisable()
+    {
+        DOTween.Kill(tweenId);
+    }
+
+    private void LateUpdate()
     {
         transform.rotation = Quaternion.identity;
     }
 
     public void UpdateHealthBar(int current, int max)
     {
-        DOTween.Kill("HealthBar" + gameObject.GetInstanceID());
-        float percent = (float)current / (float)max;
-        healthFill.DOFillAmount(percent, 0.5f).SetId("HealthBar" + gameObject.GetInstanceID());
-        number.text = current + " / " + max;
+        if (healthFill == null || max <= 0)
+        {
+            return;
+        }
+
+        DOTween.Kill(tweenId);
+
+        var percent = Mathf.Clamp01((float)current / max);
+        healthFill.DOFillAmount(percent, fillAnimationDuration).SetId(tweenId);
+
+        if (healthText != null)
+        {
+            healthText.text = $"{current} / {max}";
+        }
     }
 }

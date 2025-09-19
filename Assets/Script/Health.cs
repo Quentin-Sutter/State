@@ -3,47 +3,50 @@ using UnityEngine.Events;
 
 public class Health : MonoBehaviour
 {
-    [Header("Scripts")]
-    public HealthBar healthBar;
+    [Header("Components")]
+    [SerializeField] private HealthBar healthBar;
 
-    int maxHealth;
-    public int currentHealth;
+    [SerializeField] private UnityEvent<int, int> onHealthChanged = new UnityEvent<int, int>();
+    [SerializeField] private UnityEvent onDeath = new UnityEvent();
 
-    // Évènements publics
-    public UnityEvent<int, int> OnHealthChanged;
-    public UnityEvent OnDeath;
-     
+    public int CurrentHealth { get; private set; }
+    public int MaxHealth { get; private set; }
 
-    public void Initialize (int max)
+    public UnityEvent<int, int> OnHealthChanged => onHealthChanged;
+    public UnityEvent OnDeath => onDeath;
+
+    public void Initialize(int max)
     {
-        maxHealth = max;
-        currentHealth = maxHealth;
-        OnHealthChanged.AddListener(healthBar.UpdateHealthBar);
-        HealthChanged();
+        MaxHealth = Mathf.Max(1, max);
+        CurrentHealth = MaxHealth;
+
+        if (healthBar != null)
+        {
+            onHealthChanged.AddListener(healthBar.UpdateHealthBar);
+        }
+
+        NotifyHealthChanged();
     }
 
     public void TakeDamage(int amount)
     {
-        currentHealth -= amount;
-        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+        CurrentHealth = Mathf.Clamp(CurrentHealth - Mathf.Abs(amount), 0, MaxHealth);
+        NotifyHealthChanged();
 
-        HealthChanged();
-
-        if (currentHealth == 0)
+        if (CurrentHealth == 0)
         {
-            OnDeath?.Invoke();
+            onDeath?.Invoke();
         }
     }
 
     public void Heal(int amount)
     {
-        currentHealth += amount;
-        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
-        HealthChanged();
-    } 
+        CurrentHealth = Mathf.Clamp(CurrentHealth + Mathf.Abs(amount), 0, MaxHealth);
+        NotifyHealthChanged();
+    }
 
-    public void HealthChanged ()
+    private void NotifyHealthChanged()
     {
-        OnHealthChanged?.Invoke(currentHealth, maxHealth);
-    } 
+        onHealthChanged?.Invoke(CurrentHealth, MaxHealth);
+    }
 }

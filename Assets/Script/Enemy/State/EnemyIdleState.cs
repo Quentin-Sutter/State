@@ -5,19 +5,19 @@ public class EnemyIdleState : IEnemyState
     public void Enter(Enemy enemy)
     {
         //Debug.Log("Enemy is now Idle");
-        enemy.expressions.SetExpression(CharacterExpression.Expression.Sleep);
+        enemy.Expressions.SetExpression(CharacterExpression.Expression.Sleep);
     }
 
     public void Update(Enemy enemy)
     {
-        if (enemy.playerScript.StateMachine.CurrentState is PlayerDeathState)
+        if (enemy.Target.StateMachine.CurrentState is PlayerDeathState)
         {
             return;
         }
 
-        float distance = Vector3.Distance(enemy.transform.position, enemy.playerScript.transform.position);
+        float distance = Vector3.Distance(enemy.transform.position, enemy.Target.transform.position);
 
-        if (distance < enemy.chaseRange)
+        if (distance < enemy.ChaseRange)
         {
             enemy.ChangeState(new EnemyChaseState());
         }

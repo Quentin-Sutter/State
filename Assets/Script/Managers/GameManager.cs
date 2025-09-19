@@ -1,120 +1,163 @@
-using UnityEditor.SearchService;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class GameManager : MonoBehaviour
+public sealed class GameManager : MonoBehaviour
 {
-    private static GameManager instance = null;
-    public static GameManager Instance => instance;
+    private static GameManager _instance;
 
-    [Header("Scripts")]
+    public static GameManager Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindFirstObjectByType<GameManager>();
+            }
+
+            return _instance;
+        }
+    }
+
     public MenuManager MenuManager { get; private set; }
-    public WaveSpawner waveSpawner { get; private set; }
-     public Player player { get; private set; }
+    public WaveSpawner WaveSpawner { get; private set; }
+    public Player Player { get; private set; }
     public UpgradeManager UpgradeManager { get; private set; }
 
-    bool gameStarted = false;
-    bool gameOver = false;
+    private bool _gameStarted;
+    private bool _gameOver;
 
     private void Awake()
     {
-        if (instance != null && instance != this)
+        if (_instance != null && _instance != this)
         {
-            Destroy(this.gameObject);
+            Destroy(gameObject);
             return;
         }
-        else
-        {
-            instance = this;
-        }
-        //DontDestroyOnLoad(this.gameObject);
 
-        // Initialisations
+        _instance = this;
+
         MenuManager = FindFirstObjectByType<MenuManager>();
-        MenuManager.Initialize();
-
-        waveSpawner = FindFirstObjectByType<WaveSpawner>();
-        waveSpawner.Initialize();
-
-        player = FindFirstObjectByType<Player>();
-        player.Initialialize();
-
+        WaveSpawner = FindFirstObjectByType<WaveSpawner>();
+        Player = FindFirstObjectByType<Player>();
         UpgradeManager = FindFirstObjectByType<UpgradeManager>();
+
+        if (MenuManager == null || WaveSpawner == null || Player == null || UpgradeManager == null)
+        {
+            Debug.LogError("GameManager could not find all required components in the scene.");
+            enabled = false;
+            return;
+        }
+
+        MenuManager.Initialize();
+        MenuManager.SetMenuEventWaveSpawner(WaveSpawner);
+
+        WaveSpawner.Initialize();
+        Player.Initialize();
 
         MenuManager.ShowStartMenu();
     }
 
+    private void OnDestroy()
+    {
+        if (WaveSpawner != null)
+        {
+            WaveSpawner.OnWaveFinished.RemoveListener(HandleWaveFinished);
+            WaveSpawner.OnAllWavesFinished.RemoveListener(HandleAllWavesFinished);
+        }
+    }
+
     private void Update()
     {
-        if (!gameStarted)
+        if (!_gameStarted && Input.GetKeyDown(KeyCode.Mouse0))
         {
-            if (Input.GetKeyDown(KeyCode.Mouse0))
-            {
-                StartGame();
-            }
+            StartGame();
+            return;
         }
 
-        if (gameOver)
+        if (_gameOver && Input.GetKeyDown(KeyCode.Mouse0))
         {
-            if (Input.GetKeyDown(KeyCode.Mouse0))
-            {
-                RestartScene();
-            }
+            RestartScene();
         }
-     
     }
 
-    void StartGame ()
+    private void StartGame()
     {
-        gameStarted = true;
-        player.canControl = true;
+        if (_gameStarted)
+        {
+            return;
+        }
+
+        _gameStarted = true;
+        Player.EnableControl();
+
         MenuManager.HideStartMenu();
         MenuManager.ShowGameMenu();
-        waveSpawner.OnAllWavesFinished.AddListener(AllWavesFinished);
-        MenuManager.SetMenuEventWaveSpawner(waveSpawner);
-        waveSpawner.OnWaveFinished.AddListener(WaveFinished);
-        StartCoroutine(waveSpawner.SpawnWave());
+
+        WaveSpawner.OnWaveFinished.AddListener(HandleWaveFinished);
+        WaveSpawner.OnAllWavesFinished.AddListener(HandleAllWavesFinished);
+
+        StartCoroutine(WaveSpawner.SpawnWave());
     }
 
-    void OpenUpgradeSelectionMenu ()
+    private void OpenUpgradeSelectionMenu()
     {
-        player.RemoveControlPlayer();
+        Player.DisableControl();
         MenuManager.ShowUpgradePanel(UpgradeManager.GetUpgradeAfterWave(3));
     }
 
-    public void UpgradeSelected (SO_Upgrade upgrade)
+    public void UpgradeSelected(SO_Upgrade upgrade)
     {
-        player.GiveControlPlayer();
-        player.AddUpgrade(upgrade);
+        if (upgrade == null)
+        {
+            Debug.LogWarning("Trying to apply a null upgrade.");
+            return;
+        }
+
+        Player.EnableControl();
+        Player.AddUpgrade(upgrade);
         MenuManager.HideUpgradeMenu();
-        StartCoroutine(waveSpawner.SpawnWave());
+
+        StartCoroutine(WaveSpawner.SpawnWave());
     }
 
-    void RestartScene ()
+    private static void RestartScene()
     {
-        string currentSceneName = SceneManager.GetActiveScene().name;
-        SceneManager.LoadScene(currentSceneName);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    public void GameLosed() 
+    public void GameLost()
     {
-        gameOver = true;
+        if (_gameOver)
+        {
+            return;
+        }
+
+        _gameOver = true;
         MenuManager.ShowLoseMenu();
     }
 
-    public void GameWinned ()
+    private void GameWon()
     {
-        gameOver = true;
+        if (_gameOver)
+        {
+            return;
+        }
+
+        _gameOver = true;
         MenuManager.ShowWinMenu();
     }
 
-    public void WaveFinished ()
+    private void HandleWaveFinished()
     {
-        if (!waveSpawner.IsLastWave())OpenUpgradeSelectionMenu();
+        if (!WaveSpawner.IsLastWave())
+        {
+            OpenUpgradeSelectionMenu();
+        }
     }
 
-    public void AllWavesFinished ()
+    private void HandleAllWavesFinished()
     {
-        GameWinned();
-    } 
+        GameWon();
+    }
 }

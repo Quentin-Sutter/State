@@ -3,11 +3,15 @@ using UnityEngine;
 
 public class WaveNumberText : MonoBehaviour
 {
-    public TextMeshProUGUI text; 
+    [SerializeField] private TextMeshProUGUI text;
 
-    public void UpdateText (int current, int max)
+    public void UpdateText(int current, int max)
     {
-        text.text = "Wave  " + current + " / " + max;
-    }
+        if (text == null)
+        {
+            return;
+        }
 
+        text.text = $"Wave {current} / {max}";
+    }
 }
