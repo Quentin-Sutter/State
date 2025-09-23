@@ -9,8 +9,8 @@ public class PlayerDeathState : PlayerState
     public override void Enter()
     {
         ChangeColor(Color.black);
-        player.RemoveControlPlayer();
-        GameManager.Instance.GameLosed();
+        player.DisableControl();
+        GameManager.Instance.GameLost();
     }
 
     public override void Exit()

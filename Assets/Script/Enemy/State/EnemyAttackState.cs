@@ -1,35 +1,36 @@
+using System;
 using UnityEngine;
 
 public class EnemyAttackState : IEnemyState
-{ 
-    System.Action onStrikeFinishedHandler;
+{
+    private Action onStrikeFinishedHandler;
 
     public void Enter(Enemy enemy)
     {
-        enemy.weaponHandler.Attack(enemy, enemy.playerScript.transform.position); 
+        enemy.WeaponHandler.Attack(enemy, enemy.Target.transform.position);
         onStrikeFinishedHandler = () => StrikeFinished(enemy);
-        enemy.weaponHandler.OnStrikeFinished += onStrikeFinishedHandler;
-        enemy.expressions.SetExpression(CharacterExpression.Expression.Angry);
+        enemy.WeaponHandler.OnStrikeFinished += onStrikeFinishedHandler;
+        enemy.Expressions.SetExpression(CharacterExpression.Expression.Angry);
     }
 
     public void Update(Enemy enemy)
     {
-      
+
     }
 
-    public void Exit(Enemy enemy) 
+    public void Exit(Enemy enemy)
     {
-        enemy.weaponHandler.OnStrikeFinished -= onStrikeFinishedHandler; 
+        enemy.WeaponHandler.OnStrikeFinished -= onStrikeFinishedHandler;
     }
 
     void StrikeFinished(Enemy enemy)
     {
-        if (enemy.playerScript.StateMachine.CurrentState is PlayerDeathState)
+        if (enemy.Target.StateMachine.CurrentState is PlayerDeathState)
         {
             return;
-        } 
+        }
 
-        if (Vector3.Distance(enemy.transform.position, enemy.playerScript.transform.position) <= enemy.attackRange)
+        if (Vector3.Distance(enemy.transform.position, enemy.Target.transform.position) <= enemy.AttackRange)
         {
             enemy.ChangeState(new EnemyAttackState());
         }

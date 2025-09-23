@@ -16,12 +16,13 @@ public class PlayerDodgeState : PlayerState
 
     public override void Enter()
     {
-        dashTime = GameBalance.Config.dodgeDuration.ApplyPercentChange(player.fullUpgrade.dodgeDuration);
-        dashSpeed = GameBalance.Config.dodgeSpeed.ApplyPercentChange(player.fullUpgrade.dodgeSpeed);
+        dashTime = GameBalance.Config.dodgeDuration.ApplyPercentChange(player.FullUpgrade.dodgeDuration);
+        dashSpeed = GameBalance.Config.dodgeSpeed.ApplyPercentChange(player.FullUpgrade.dodgeSpeed);
         vulnerableTime = GameBalance.Config.dodgeVulnerableTime;
         inputVector = player.lastInputVector;
         player.gameObject.layer = 8;
-        
+        timer = 0f;
+
     }
 
     public override void Update()
@@ -29,8 +30,8 @@ public class PlayerDodgeState : PlayerState
         if (timer < dashTime)
         {
             timer += Time.deltaTime;
-            if (IsInvulnerable()) player.expressions.SetExpression(CharacterExpression.Expression.Sunglass);
-            else player.expressions.SetExpression(CharacterExpression.Expression.Surprised);
+            if (IsInvulnerable()) player.Expressions.SetExpression(CharacterExpression.Expression.Sunglass);
+            else player.Expressions.SetExpression(CharacterExpression.Expression.Surprised);
 
             if (timer >= dashTime)
             {
@@ -43,7 +44,7 @@ public class PlayerDodgeState : PlayerState
     public override void Exit()
     {
         StopPlayerMovement();
-        player.dashCoolDown = GameBalance.Config.dodgeColdown;
+        player.DashCooldown = GameBalance.Config.dodgeCooldown;
         player.gameObject.layer = 6;
     }
 

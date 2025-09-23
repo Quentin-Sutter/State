@@ -2,12 +2,16 @@ using UnityEngine;
 
 public static class FloatExtensions
 {
+    private const float PercentageDivider = 100f;
+
     public static float ApplyPercentChange(this float value, float percent)
     {
-        float multiplier = 1.0f + Mathf.Abs(percent) / 100.0f;
-        float result = value;
-        if (percent > 0) result *= multiplier;
-        else result /= multiplier;
-        return result;
-    } 
+        if (Mathf.Approximately(percent, 0f))
+        {
+            return value;
+        }
+
+        var multiplier = 1f + Mathf.Abs(percent) / PercentageDivider;
+        return percent > 0f ? value * multiplier : value / multiplier;
+    }
 }

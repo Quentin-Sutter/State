@@ -29,12 +29,13 @@ public class PlayerAttackState : PlayerState
     public override void Enter()
     {
         continueCombo = false;
+        timeBeforeRegisterClick = 0.2f;
         player.StopMovement();
 
-        player.weaponHandler.Attack(player, player.lastPosClick);
+        player.WeaponHandler.Attack(player, player.lastPosClick);
         onStrikeFinishedHandler = () => StrikeFinished(player);
-        player.weaponHandler.OnStrikeFinished += onStrikeFinishedHandler;
-        player.expressions.SetExpression(CharacterExpression.Expression.Angry); 
+        player.WeaponHandler.OnStrikeFinished += onStrikeFinishedHandler;
+        player.Expressions.SetExpression(CharacterExpression.Expression.Angry);
     }
 
     public override void Update()
@@ -55,7 +56,7 @@ public class PlayerAttackState : PlayerState
 
     public override void Exit()
     {
-        player.weaponHandler.OnStrikeFinished -= onStrikeFinishedHandler;
+        player.WeaponHandler.OnStrikeFinished -= onStrikeFinishedHandler;
         if (continueCombo == false) player.ComboFinished();
     }
 

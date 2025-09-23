@@ -1,25 +1,33 @@
-using DG.Tweening;
 using System.Collections;
-using System.Linq;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class MenuManager : MonoBehaviour
 {
-    public TextMeshProUGUI newWaveText;
-    public RectTransform playerUIMenu;
-    public RectTransform waveMenu;
-    public RectTransform winMenu;
-    public RectTransform startMenu;
-    public RectTransform loseMenu;
-    public RectTransform upgradeMenu;
+    [Header("Menus")]
+    [SerializeField] private RectTransform playerMenu;
+    [SerializeField] private RectTransform waveMenu;
+    [SerializeField] private RectTransform winMenu;
+    [SerializeField] private RectTransform startMenu;
+    [SerializeField] private RectTransform loseMenu;
+    [SerializeField] private RectTransform upgradeMenu;
 
-    public WaveNumberText waveNumber;
+    [Header("Wave UI")]
+    [SerializeField] private TextMeshProUGUI newWaveText;
+    [SerializeField] private WaveNumberText waveNumber;
 
-    public Image flashImage;
+    [Header("Upgrade UI")]
+    [SerializeField] private UpgradePanel[] upgradePanels;
 
-    public UpgradePanel[] upgradePanels;
+    [Header("Effects")]
+    [SerializeField] private Image flashImage;
+    [SerializeField] private float flashAlpha = 0.75f;
+    [SerializeField] private float swingAnimationDuration = 1f;
+    [SerializeField] private float swingDisplayDuration = 3f;
+
+    private Coroutine waveSwingRoutine;
 
     public void Initialize()
     {
@@ -27,36 +35,13 @@ public class MenuManager : MonoBehaviour
         HideMenu(winMenu, false);
         HideMenu(startMenu, false);
         HideMenu(loseMenu, false);
-        HideMenu(playerUIMenu, false); 
+        HideMenu(playerMenu, false);
         HideMenu(upgradeMenu, false);
     }
 
-    public void SetMenuEventWaveSpawner (WaveSpawner waveSpawner)
+    public void SetMenuEventWaveSpawner(WaveSpawner waveSpawner)
     {
-        waveSpawner.OnWaveStart.AddListener(WaveStart);
-    }
-
-    public void ShowWaveStart()
-    {
-        bool boss = GameManager.Instance.waveSpawner.IsBossWave();
-        StartCoroutine(SwingOnScreenAnimation(newWaveText.rectTransform));
-        if (boss)
-        {
-            newWaveText.text = "Boss Wave";
-            ScreenFlash(Color.red, 0.5f, 1, 0.5f);
-        }
-        else 
-        {
-            newWaveText.text = "Normal Wave";
-        }
-        ShowMenu(waveMenu, true);
-        StartCoroutine(WaitAndHideMenu(waveMenu));
-    }
-
-    IEnumerator WaitAndHideMenu (RectTransform menu)
-    {
-        yield return new WaitForSeconds(3.0f);
-        HideMenu(menu);
+        waveSpawner.OnWaveStart.AddListener(OnWaveStarted);
     }
 
     public void ShowStartMenu()
@@ -64,14 +49,14 @@ public class MenuManager : MonoBehaviour
         ShowMenu(startMenu, false);
     }
 
-    public void HideStartMenu ()
+    public void HideStartMenu()
     {
         HideMenu(startMenu, true);
     }
 
-    public void ShowGameMenu ()
+    public void ShowGameMenu()
     {
-        ShowMenu(playerUIMenu);
+        ShowMenu(playerMenu);
     }
 
     public void ShowLoseMenu()
@@ -82,74 +67,100 @@ public class MenuManager : MonoBehaviour
     public void ShowWinMenu()
     {
         ShowMenu(winMenu);
-    } 
+    }
 
-    public void ShowUpgradePanel (SO_Upgrade[] upgrades)
+    public void ShowUpgradePanel(SO_Upgrade[] upgrades)
     {
         ShowMenu(upgradeMenu);
-        
-        for (int i = 0; i < upgradePanels.Length; i++)
+
+        for (var i = 0; i < upgradePanels.Length; i++)
         {
-            upgradePanels[i].gameObject.SetActive(true);
-            upgradePanels[i].Initialize(upgrades[i]);
+            if (i < upgrades.Length && upgrades[i] != null)
+            {
+                upgradePanels[i].gameObject.SetActive(true);
+                upgradePanels[i].Initialize(upgrades[i]);
+            }
+            else
+            {
+                upgradePanels[i].gameObject.SetActive(false);
+            }
         }
     }
 
-    public void HideUpgradeMenu ()
+    public void HideUpgradeMenu()
     {
         HideMenu(upgradeMenu);
     }
 
-    public IEnumerator SwingOnScreenAnimation(RectTransform animated)
+    private void OnWaveStarted(int current, int max)
     {
-        animated.gameObject.SetActive(true);
-        animated.anchoredPosition = Vector2.left * Screen.width * 2.0f;
-        Sequence swing = DOTween.Sequence();
-        swing.Append(animated.DOAnchorPos(Vector2.zero, 1.0f).SetEase(Ease.InOutBack));
-        swing.Append(animated.DOAnchorPos(Vector2.right * Screen.width * 2.0f, 1.0f).SetEase(Ease.InQuint).SetDelay(1.0f));
-        swing.Play();
-        yield return new WaitForSeconds(3.0f);
-        animated.gameObject.SetActive(false);
+        ShowWaveStart();
+        waveNumber?.UpdateText(current, max);
     }
 
-    public void ShowMenu(RectTransform menu, bool appearSmooth = true)
+    private void ShowWaveStart()
     {
-        CanvasGroup cg = null;
-        if (appearSmooth)
+        if (waveSwingRoutine != null)
         {
-            cg = menu.GetComponent<CanvasGroup>();
-            if (cg == null)
-            {
-                appearSmooth = false; 
-                Debug.LogWarning("No canvas group on the menu");
-            }
+            StopCoroutine(waveSwingRoutine);
         }
 
-        if (appearSmooth)
+        var isBossWave = GameManager.Instance.WaveSpawner.IsBossWave();
+        newWaveText.text = isBossWave ? "Boss Wave" : "Wave Incoming";
+
+        if (isBossWave)
         {
-            cg.alpha = 0.0f;
-            cg.DOFade(1.0f, 0.5f);
+            ScreenFlash(Color.red, 0.5f, 1, 0.5f);
+        }
+
+        ShowMenu(waveMenu, true);
+        waveSwingRoutine = StartCoroutine(SwingOnScreenAnimation(waveMenu));
+    }
+
+    private IEnumerator SwingOnScreenAnimation(RectTransform animated)
+    {
+        animated.gameObject.SetActive(true);
+        animated.anchoredPosition = Vector2.left * Screen.width * 2f;
+
+        var swing = DOTween.Sequence();
+        swing.Append(animated.DOAnchorPos(Vector2.zero, swingAnimationDuration).SetEase(Ease.InOutBack));
+        swing.Append(animated.DOAnchorPos(Vector2.right * Screen.width * 2f, swingAnimationDuration)
+            .SetEase(Ease.InQuint)
+            .SetDelay(1f));
+
+        yield return new WaitForSeconds(swingDisplayDuration);
+        animated.gameObject.SetActive(false);
+        waveSwingRoutine = null;
+    }
+
+    private void ShowMenu(RectTransform menu, bool smooth = true)
+    {
+        if (menu == null)
+        {
+            return;
+        }
+
+        var canvasGroup = smooth ? GetOrCreateCanvasGroup(menu) : null;
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = 0f;
+            canvasGroup.DOFade(1f, 0.5f);
         }
 
         menu.gameObject.SetActive(true);
     }
 
-    public void HideMenu(RectTransform menu, bool disapearSmooth = true)
+    private void HideMenu(RectTransform menu, bool smooth = true)
     {
-        CanvasGroup cg = null;
-        if (disapearSmooth)
+        if (menu == null)
         {
-            cg = menu.GetComponent<CanvasGroup>();
-            if (cg == null)
-            {
-                disapearSmooth = false;
-                Debug.LogWarning("No canvas group on the menu");
-            }
+            return;
         }
 
-        if (disapearSmooth)
-        { 
-            cg.DOFade(0.0f, 0.5f).OnComplete(()=> { menu.gameObject.SetActive(false); } );
+        var canvasGroup = smooth ? GetOrCreateCanvasGroup(menu) : null;
+        if (canvasGroup != null)
+        {
+            canvasGroup.DOFade(0f, 0.5f).OnComplete(() => menu.gameObject.SetActive(false));
         }
         else
         {
@@ -157,19 +168,29 @@ public class MenuManager : MonoBehaviour
         }
     }
 
-    void WaveStart (int current, int max)
+    private static CanvasGroup GetOrCreateCanvasGroup(RectTransform menu)
     {
-        ShowWaveStart();
-        waveNumber.UpdateText(current, max); 
-    }
-    
-    void ScreenFlash (Color color, float duration, int number, float delay)
-    {
-        int trueNumber = number * 2;
-        Color startColor = color;
-        startColor.a = 0.0f;
-        flashImage.color = startColor;
+        var canvasGroup = menu.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+        {
+            canvasGroup = menu.gameObject.AddComponent<CanvasGroup>();
+        }
 
-        flashImage.DOFade(0.75f, duration / trueNumber).SetLoops(trueNumber, LoopType.Yoyo).SetDelay(delay);
+        return canvasGroup;
+    }
+
+    private void ScreenFlash(Color color, float duration, int flashes, float delay)
+    {
+        if (flashImage == null)
+        {
+            return;
+        }
+
+        var loops = Mathf.Max(1, flashes) * 2;
+        var startColor = color;
+        startColor.a = 0f;
+
+        flashImage.color = startColor;
+        flashImage.DOFade(flashAlpha, duration / loops).SetLoops(loops, LoopType.Yoyo).SetDelay(delay);
     }
 }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(menuName = "Config/Game Config")]
 public class GameConfig : ScriptableObject
@@ -16,7 +17,9 @@ public class GameConfig : ScriptableObject
     public float dodgeSpeed = 6f;
     public float dodgeDuration = 0.5f;
     public float dodgeVulnerableTime;
-    public float dodgeColdown;
+
+    [FormerlySerializedAs("dodgeColdown")]
+    public float dodgeCooldown;
 
     [Header("Waves")]
     public int startWave = 1;

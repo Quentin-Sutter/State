@@ -19,8 +19,8 @@ public class EnemyDamageState : IEnemyState
         power = pushValues.power;
         DOTween.To(() => power, x => power = x, 0.0f, pushValues.duration).SetEase(Ease.OutCubic).SetId("Damage" + enemy.GetInstanceID());
         FxManager.Instance.PlayVFX("Hit", enemy.transform.position);
-        enemy.expressions.SetExpression(CharacterExpression.Expression.Hurt);
-        enemy.weaponHandler.InterruptCurrentAttack();
+        enemy.Expressions.SetExpression(CharacterExpression.Expression.Hurt);
+        enemy.WeaponHandler.InterruptCurrentAttack();
     }
 
     public void Exit(Enemy enemy)

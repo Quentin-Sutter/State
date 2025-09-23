@@ -3,19 +3,33 @@ using UnityEngine;
 
 public class UpgradePanel : MonoBehaviour
 {
-    public TextMeshProUGUI upgradeName;
-    public TextMeshProUGUI upgradeDescription;
-    SO_Upgrade actualUpgrade;
+    [SerializeField] private TextMeshProUGUI upgradeName;
+    [SerializeField] private TextMeshProUGUI upgradeDescription;
 
-    public void Initialize (SO_Upgrade upgrade)
-    {
-        actualUpgrade = upgrade;
-        upgradeName.text = upgrade.name;
-        upgradeDescription.text = upgrade.BuildDescription();
-    } 
+    private SO_Upgrade upgrade;
 
-    public void UpgradeClicked ()
+    public void Initialize(SO_Upgrade newUpgrade)
     {
-        GameManager.Instance.UpgradeSelected(actualUpgrade);
+        upgrade = newUpgrade;
+
+        if (upgradeName != null)
+        {
+            upgradeName.text = upgrade != null ? upgrade.name : string.Empty;
+        }
+
+        if (upgradeDescription != null)
+        {
+            upgradeDescription.text = upgrade != null ? upgrade.BuildDescription() : string.Empty;
+        }
+    }
+
+    public void UpgradeClicked()
+    {
+        if (upgrade == null)
+        {
+            return;
+        }
+
+        GameManager.Instance.UpgradeSelected(upgrade);
     }
 }

@@ -23,11 +23,11 @@ public abstract class PlayerState
     {
         if (time > 0.0f)
         {
-            player.skin.DOColor(color, time);
+            player.Skin.DOColor(color, time);
         }
         else
         {
-            player.skin.color = color;
+            player.Skin.color = color;
         }
     }
 

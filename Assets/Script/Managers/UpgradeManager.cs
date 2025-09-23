@@ -1,34 +1,37 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class UpgradeManager : MonoBehaviour
 {
-    public SO_Upgrade[] upgradeAvaibleAfterWave;
+    [FormerlySerializedAs("upgradeAvaibleAfterWave")]
+    [SerializeField] private SO_Upgrade[] upgradesAvailableAfterWave;
 
-    public SO_Upgrade[] GetUpgradeAfterWave (int amount)
+    public SO_Upgrade[] GetUpgradeAfterWave(int amount)
     {
-        if (upgradeAvaibleAfterWave.Length < amount)
+        if (upgradesAvailableAfterWave == null || upgradesAvailableAfterWave.Length == 0)
         {
-            Debug.LogWarning("Not enough upgrade to pull");
+            Debug.LogWarning("No upgrades configured in UpgradeManager.");
+            return System.Array.Empty<SO_Upgrade>();
         }
 
-        SO_Upgrade[] upgrades = new SO_Upgrade[amount];
+        amount = Mathf.Clamp(amount, 0, upgradesAvailableAfterWave.Length);
 
-        if (upgradeAvaibleAfterWave.Length == amount)
+        if (upgradesAvailableAfterWave.Length == amount)
         {
-            return upgradeAvaibleAfterWave;
+            return (SO_Upgrade[])upgradesAvailableAfterWave.Clone();
         }
 
-        List<SO_Upgrade> avaibleUpgrade = upgradeAvaibleAfterWave.ToList ();
+        var availableUpgrades = new List<SO_Upgrade>(upgradesAvailableAfterWave);
+        var selection = new SO_Upgrade[amount];
 
-        for (int i = 0; i < amount; i++)
+        for (var i = 0; i < amount; i++)
         {
-            int index = Random.Range(0, avaibleUpgrade.Count);
-            SO_Upgrade upgrade = avaibleUpgrade[index];
-            avaibleUpgrade.RemoveAt(index);
-            upgrades[i] = upgrade;
-        } 
-        return upgrades;
+            var index = Random.Range(0, availableUpgrades.Count);
+            selection[i] = availableUpgrades[index];
+            availableUpgrades.RemoveAt(index);
+        }
+
+        return selection;
     }
 }

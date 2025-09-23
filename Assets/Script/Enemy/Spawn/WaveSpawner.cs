@@ -4,38 +4,74 @@ using UnityEngine.Events;
 
 public class WaveSpawner : MonoBehaviour
 {
-    public EnemyFactory enemyFactory;
-    public ScriptableObject waveStrategyObject;
+    [Header("Dependencies")]
+    [SerializeField] private EnemyFactory enemyFactory;
+    [SerializeField] private ScriptableObject waveStrategyObject;
+
+    [Header("Spawn Settings")]
+    [SerializeField] private Transform[] spawnPoints;
+    [SerializeField] private float delayBetweenSpawns = 0.3f;
+    [SerializeField] private float waveMenuTime = 3f;
+    [SerializeField] private int maxWaves = 1;
+
     private IWaveStrategy waveStrategy;
+    private Player player;
 
-    public Transform[] spawnPoints;
-    public float waveMenuTime = 3f;
-
-    public int maxWaves;
     private int currentWave = 1;
-
-    int deadEnemies;
-    int spawnedEnemies;
-
-    Player player;
+    private int deadEnemies;
+    private int spawnedEnemies;
 
     public UnityEvent<int, int> OnWaveStart;
     public UnityEvent OnWaveFinished;
     public UnityEvent OnAllWavesFinished;
 
-    public void Initialize ()
+    public void Initialize()
     {
         waveStrategy = waveStrategyObject as IWaveStrategy;
+        if (waveStrategy == null)
+        {
+            Debug.LogError("Wave strategy scriptable object does not implement IWaveStrategy.");
+            enabled = false;
+            return;
+        }
+
         player = FindFirstObjectByType<Player>();
-        enemyFactory.enemyDeath.AddListener(EnemyDeath);
+        if (player == null)
+        {
+            Debug.LogError("WaveSpawner could not find the Player in the scene.");
+            enabled = false;
+            return;
+        }
+
+        if (enemyFactory == null)
+        {
+            Debug.LogError("WaveSpawner is missing an EnemyFactory reference.");
+            enabled = false;
+            return;
+        }
+
+        enemyFactory.enemyDeath.AddListener(OnEnemyDeath);
+    }
+
+    private void OnDestroy()
+    {
+        if (enemyFactory != null)
+        {
+            enemyFactory.enemyDeath.RemoveListener(OnEnemyDeath);
+        }
     }
 
     public IEnumerator SpawnWave()
     {
-        var enemies = waveStrategy.GetWaveEnemies(currentWave);
-        WaveStart(enemies.Count);
+        if (waveStrategy == null)
+        {
+            yield break;
+        }
 
-        yield return new WaitForSeconds(waveMenuTime); // wait for menu
+        var enemies = waveStrategy.GetWaveEnemies(currentWave);
+        StartWave();
+
+        yield return new WaitForSeconds(waveMenuTime);
 
         if (currentWave == maxWaves)
         {
@@ -50,40 +86,54 @@ public class WaveSpawner : MonoBehaviour
         foreach (var enemyData in enemies)
         {
             enemyFactory.SpawnEnemy(enemyData, GetRandomSpawnPoint(), player);
-            yield return new WaitForSeconds(0.3f); // délai entre spawns
+            spawnedEnemies++;
+            yield return new WaitForSeconds(delayBetweenSpawns);
         }
 
-        yield return new WaitUntil(()=> deadEnemies == spawnedEnemies);
+        yield return new WaitUntil(() => deadEnemies >= spawnedEnemies);
+
         OnWaveFinished?.Invoke();
-        if (IsLastWave()) OnAllWavesFinished?.Invoke();
-        else currentWave++;
+
+        if (IsLastWave())
+        {
+            OnAllWavesFinished?.Invoke();
+        }
+        else
+        {
+            currentWave++;
+        }
     }
 
-    void WaveStart (int enemiesNumber)
+    public bool IsLastWave()
+    {
+        return currentWave >= maxWaves;
+    }
+
+    public bool IsBossWave()
+    {
+        return IsLastWave() && waveStrategy?.GetBossData() != null;
+    }
+
+    private void StartWave()
     {
         OnWaveStart?.Invoke(currentWave, maxWaves);
         deadEnemies = 0;
-        spawnedEnemies = enemiesNumber;
-    } 
+        spawnedEnemies = 0;
+    }
 
-    void EnemyDeath ()
+    private void OnEnemyDeath()
     {
         deadEnemies++;
     }
 
-    Vector3 GetRandomSpawnPoint ()
+    private Vector3 GetRandomSpawnPoint()
     {
-        Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
+        if (spawnPoints == null || spawnPoints.Length == 0)
+        {
+            return transform.position;
+        }
+
+        var spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
         return spawnPoint.position;
-    }
-
-    public bool IsLastWave ()
-    {
-        return currentWave == maxWaves;
-    }
-
-    public bool IsBossWave ()
-    {
-        return IsLastWave() && waveStrategy.GetBossData() != null;
     }
 }
