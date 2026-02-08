@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -23,6 +24,8 @@ public class Character : MonoBehaviour, IDamageable
     public UpgradeStats FullUpgrade { get; private set; } = new();
 
     protected List<SO_Upgrade> Upgrades => upgrades;
+
+    public event Action<Character> Damaged;
 
     public void SetUpgrades(IEnumerable<SO_Upgrade> newUpgrades)
     {
@@ -77,6 +80,8 @@ public class Character : MonoBehaviour, IDamageable
         var baseAmount = origin.WeaponHandler.CurrentWeapon.damage;
         var finalAmount = baseAmount.ApplyPercentChange(origin.FullUpgrade.weaponDamagePercent);
         health.TakeDamage(Mathf.RoundToInt(finalAmount));
+
+        Damaged?.Invoke(origin);
     }
 
     public virtual void UpdateMovement(Vector2 direction, float speed = 0f)
