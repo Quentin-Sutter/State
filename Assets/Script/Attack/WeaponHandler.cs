@@ -156,7 +156,7 @@ public class WeaponHandler : MonoBehaviour
 
     private IEnumerator ExecuteStrike(Character controller, SO_Strike strike, Vector3 targetPoint)
     {
-        var direction = (targetPoint - transform.position).normalized;
+        Vector2 direction = (targetPoint - transform.position).normalized;
         var strikeDuration = ApplyWeaponSpeed(strike.duration, controller);
 
         var rotationTweenId = RotationTweenIdPrefix + GetInstanceID();

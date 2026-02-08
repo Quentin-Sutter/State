@@ -74,7 +74,7 @@ public class Character : MonoBehaviour, IDamageable
             return;
         }
 
-        var baseAmount = origin.WeaponHandler.CurrentWeapon.damage;
+        float baseAmount = origin.WeaponHandler.CurrentWeapon.damage;
         var finalAmount = baseAmount.ApplyPercentChange(origin.FullUpgrade.weaponDamagePercent);
         health.TakeDamage(Mathf.RoundToInt(finalAmount));
     }
