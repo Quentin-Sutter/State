@@ -125,11 +125,11 @@ public class ActorStateController : MonoBehaviour
         }
     }
 
-    private void HandleDamaged(Character origin)
+    private bool HandleDamaged(Character origin)
     {
         if (!initialized || origin == null)
         {
-            return;
+            return true;
         }
 
         if (StateMachine.CurrentState is CharacterState state && state.IsInvulnerable)
@@ -141,11 +141,12 @@ public class ActorStateController : MonoBehaviour
                 StateMachine.ChangeState(new CharacterAttackState(StateMachine, true));
             }
 
-            return;
+            return false;
         }
 
         var pushValues = character.GetPushValues(character, origin);
         StateMachine.ChangeState(new CharacterDamageState(StateMachine, pushValues));
+        return true;
     }
 
     private void HandleDeath()
